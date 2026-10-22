@@ -314,6 +314,11 @@ v1.1 REBUILD ME LAZMI:
 - Screenshots (saboot): qemu-desktop-clean.png (JK wallpaper
   render + saaf desktop), qemu-desktop-apps.png (12 apps
   launch saboot) - jk-os folder me mehfooz hain.
+- Build scripts + ye report GitHub repo JK-OS (junaidkareem1112
+  -cmyk/JK-OS) par push ho gaye hain: commit
+  6e638a98b586827a96b3bfa1a0f2bb885566edb1 (build/ folder me
+  23 scripts + TEST-REPORT.txt + README status "released"),
+  read-back verified.
 - GitHub RELEASE user khud GitHub UI me banayega (connector
   me release tool nahi hai) - assets upar wale folder se.
 ================================================================

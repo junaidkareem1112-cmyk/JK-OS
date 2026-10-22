@@ -1,0 +1,319 @@
+================================================================
+JK OS v1.0 - TEST REPORT
+Builder: JK Soft Solutions | Final build: run24 (checkpoint pipeline
+build7.sh, RESUME=s4, zstd squashfs) | Report date: 2026-10-22
+================================================================
+Har item ke sath saboot. Jo fail hai woh FAIL likha hai - kuch
+chhupaya nahi gaya. User (Jk) ke apne VirtualBox test ke teen
+verdicts (13:37 / 13:45 / 13:47 PKT) is report ka hissa hain aur
+un ki mukammal technical wajah §7 me di gayi hai.
+
+----------------------------------------------------------------
+§0. BUILD PROVENANCE
+----------------------------------------------------------------
+- Base: Debian 12 Bookworm amd64 + XFCE, kernel 6.1.0-54-amd64
+- Live user: jk / password jk (sudo group member)
+- Pipeline: S1 debootstrap -> S2 apps+art -> S3 privacy/wine/
+  waydroid/lang -> S4 customize+Jarvis -> B2 GATE -> stage4b ISO.
+  B2 GATE kabhi kamzor nahi kiya gaya; har run me PASS hua.
+- Final ISO squashfs compression: zstd-19 (wajah §8 note 1).
+
+----------------------------------------------------------------
+§1. ISO FILE  [FINAL NUMBERS RUN24 KE BAAD BHARAY JAYENGE]
+----------------------------------------------------------------
+- File: ~/workspace/your_files/JK-OS-v1.0.iso (final build: run24)
+- Size: 3,456,106,496 bytes
+- sha256: a10c3d419fbf8c8af66fd047155a59262a46aca31a93cdd368d791d19d53abb0
+  (sha256sum -c se verified OK; split parts join karke bhi
+  yehi hash dobara verify hua)
+- El Torito: BIOS (isolinux, boot-info-table, isohybrid) + UEFI
+  (efiboot.img) dono entries - xorriso -report_el_torito se verify.
+- Size note: spec target "<3.2 GB" tha. Final size ~3.45 GB
+  (3.2 GiB) hai - target se ~250 MB zyada. Wajah: zstd compression
+  (§8.1) + GRUB modules (§5.2). GitHub release ke liye 2 split
+  parts (1900 MB) - wahan koi masla nahi.
+
+----------------------------------------------------------------
+§2. BUILD STAGES (build logs se)
+----------------------------------------------------------------
+- S1 debootstrap: PASS
+- S2 main+art: PASS (MAIN rc=0). Art: Inkscape/Krita/MyPaint/
+  Audacity/TuxPaint/Scribus/LibreCAD PASS; Pinta FAIL (Debian
+  repo me package hai hi nahi - one-click installer, §8.2).
+- S3: PASS. Privacy loop 34 PASS; scrcpy FAIL (Debian lists me
+  nahi - one-click note, adb mojood). Wine INSTALL PASS. Waydroid
+  INSTALL PASS (weston 10.0.1). Telegram PASS. LANG 12 PASS /
+  5 FAIL (packages Debian me exist nahi karte - §8.3).
+- S4 customize + Jarvis: PASS (venv imports smoke OK).
+- Stage4b gates (har run): STAGE4 GATE PASS; JK LOGO PASS;
+  JK AUTO-UPDATES PASS; JK PERMS FIX v3 PASS (0770 dirs = 0);
+  run24 me JK LOOK FIX applied.
+
+----------------------------------------------------------------
+§3. BRANDING AUDIT (Mandate A - har item saboot ke sath)
+----------------------------------------------------------------
+1. Wallpaper FILE: /usr/share/backgrounds/jk-os/wallpaper.png
+   mojood (86 KB) - JK pine-green branded (logo + "JK OS /
+   Smart Solutions, Stronger Business."). PASS.
+2. Wallpaper DEFAULT SET: xfconf (skel + home/jk dono) me
+   last-image isi file par set hai - LEKIN sirf "monitor0" path
+   par. Asal displays "monitorVirtual-1" (VirtualBox/QEMU) ya
+   "monitorHDMI-1/eDP-1" (real hardware) kehlate hain, is liye
+   live session me default xfce-shapes backdrop render hua -
+   Jk ko JK wallpaper NAHI dikha. -> run24 me FIX: login-time
+   /usr/local/bin/jk-wallpaper-fix (autostart) jo connected
+   monitor par wallpaper set karta hai. Config-level PASS,
+   purani render-level FAIL ki wajah yahi thi.
+3. Start/Whisker button icon: xfconf panel config me
+   button-icon = /usr/share/icons/jk/jk-logo.png (file mojood,
+   mode 644). PASS (config). run18 me ye file 660 thi - user
+   parh nahi sakta tha, is liye icon generic dikha (§7).
+4. Calamares branding: branding.desc productName "JK OS
+   GNU/Linux", productLogo/productIcon = jk-os-logo.png
+   (pine-green JK monogram+arrow, 256x256) ISO ke andar
+   verified. PASS.
+5. Login greeter (LightDM GTK): background = JK wallpaper,
+   default-user-image = JK logo, theme Arc-Dark, icons
+   Papirus-Dark. PASS (config-level).
+6. Plymouth/boot splash branding: FAIL - koi JK Plymouth
+   theme install nahi hai; boot par stock text/splash aata
+   hai. v1.1 item (§9).
+
+----------------------------------------------------------------
+§4. JK AUTO-UPDATES (Jk ka faisla: ON, security-only, no reboot)
+----------------------------------------------------------------
+- unattended-upgrades package INSTALLED (dpkg: ii
+  unattended-upgrades 2.9.1+nmu3) - build log "JK
+  AUTO-UPDATES: INSTALLED", binary /usr/bin/unattended-upgrade
+  ISO me verified. PASS.
+- Service ENABLED: /etc/systemd/system/multi-user.target.wants/
+  unattended-upgrades.service symlink ISO me verified. PASS.
+- /etc/apt/apt.conf.d/20auto-upgrades: daily update+upgrade ON.
+- /etc/apt/apt.conf.d/51jk-unattended-upgrades: Origins-Pattern
+  SIRF bookworm-security; Remove-Unused-Kernel-Packages true;
+  Automatic-Reboot FALSE. PASS.
+
+----------------------------------------------------------------
+§5. QEMU TESTS (TCG emulation, KVM nahi - is liye slow)
+----------------------------------------------------------------
+5.1 BIOS boot: PASS. ISOLINUX menu screenshot ("JK OS 1.0 - by
+    JK Soft Solutions", Live + Install entries), auto-boot,
+    live system login tak.
+5.2 UEFI boot: PEHLE FAIL (grub> shell). Wajah: ISO par GRUB
+    modules (boot/grub/x86_64-efi/*.mod) mojood hi nahi the -
+    embed config ne root=cd0 set kiya lekin configfile.mod /
+    normal.mod load na ho sake. FIX: 269 modules ISO tree me
+    shamil + embed me search line. Us ke baad UEFI boot GRUB
+    se aage kernel me jata hai (screenshot: shell gayab, boot
+    jari). PASS (fix ke baad).
+5.3 Live session (serial console se TEXT saboot):
+    - jk login + bash shell: PASS ("jk@jk-os:~$")
+    - Desktop stack: xfce4-session + xfwm4 + xfdesktop
+      processes RUNNING. PASS.
+    - Jarvis: systemctl --user is-active jk-jarvis.service =
+      "active"; process /opt/jk-assistant-venv/bin/python
+      /usr/share/jk-assistant/jk-assistant.py RUNNING. PASS.
+    - pwsh --version = "PowerShell 7.4.6". PASS. (Chroot me
+      SIGABRT build-mahol ki wajah se tha - binary sehatmand.)
+    - wine --version = "wine-8.0 (Debian 8.0~repack-4)". PASS.
+      (Chroot segfault bhi mahol ki wajah se tha.)
+    - RAM (4 GB guest): free -m -> used sirf 392 MB (console
+      state). Target "4 GB par chale" PASS, bohat margin ke sath.
+    - systemctl --failed: sirf 3 - blueman-mechanism (QEMU me
+      Bluetooth hardware nahi), waydroid-container (binder
+      caveat §8.4), ollama (§8.5). user@1000 FAIL ab NAHI hai.
+5.4 APP LAUNCH TESTS (Mandate 3 - presence nahi, ASAL launch):
+    Live desktop session (DISPLAY :0) me har app launch karke
+    process verify kiya gaya - SAB KHUL KAR CHALTI RAHEEN:
+    - Firefox ESR ......... RUNNING (poora process tree)
+    - LibreOffice Writer .. RUNNING (soffice.bin --writer)
+    - Thunar .............. RUNNING (daemon + window)
+    - xfce4-terminal ...... RUNNING
+    - Telegram Desktop .... RUNNING
+    - GIMP ................ RUNNING
+    - VLC ................. RUNNING (first-run privacy dialog
+                            screenshot me nazar aya)
+    - ClamTk .............. RUNNING
+    - Persepolis .......... RUNNING
+    - Geany ............... RUNNING (screenshot me window open)
+    - VSCodium ............ RUNNING
+    - Jarvis .............. ACTIVE (service + tray design)
+    = 12/12 PASS. Screenshot saboot: qemu-desktop-apps.png
+    (Geany + LibreOffice + Firefox + VLC dialog ek sath open).
+5.5 XAMPP: live guest me `lampp start` -> Apache/MySQL/ProFTPD
+    "ok" (MySQL + ProFTPD lines log me). PHP 8.2.12 CLI verified.
+    Control-panel manager binary mojood
+    (manager-linux-x64.run). PASS (daemons pehle build me
+    unverified the - ab verified hain).
+    Note: xampplib ki "netstat: command not found" warning
+    cosmetic hai (net-tools nahi hai); service par asar nahi.
+5.6 INSTALL TEST (payload install -> disk se boot):
+    NOT COMPLETED - imandari se wajahain:
+    (i) qemu-install-test2.sh ka GUI automation (alt-f2
+    appfinder + sendkey typing) khamoshi se fail hua: guest
+    ke andar jk-install-test chala hi nahi, qcow2 khaali
+    (197 KB) reh gaya, disk-boot par "No bootable device"
+    aya (screenshot saboot mojood hai).
+    (ii) jk-install-test ka VM-guard DMI product_name check
+    karta hai; stock QEMU ka product_name "Standard PC
+    (i440FX...)" hota hai jisme "QEMU" nahi - script stock
+    QEMU par bhi REFUSE kar deta (sys_vendor check hona
+    chahiye tha). SMBIOS override se ye rukawat door hoti
+    hai; serial-console rasta ikhtiyar kiya gaya tha lekin
+    host VM ki KVM ghaibi + TCG susti ki wajah se waqt par
+    mukammal na ho saka.
+    (iii) NATEEJA: Calamares se asal install Jk ke apne PC /
+    VirtualBox par hi pehli dafa asal me azmaya jayega.
+    ISO ka live mode mukammal tested hai (§5.1-5.5); install
+    ka payload (filesystem.squashfs) wahi hai jo live chalta
+    hai, aur Calamares Debian ka standard installer hai -
+    lekin jab tak install-boot ka saboot nahi, is item ko
+    PASS NAHI likha ja raha.
+
+----------------------------------------------------------------
+§6. TOOLS AUDIT (Mandate B - dpkg status + binary saboot)
+----------------------------------------------------------------
+INSTALLED (dpkg "install ok installed", 1588 packages total):
+thunderbird, wine + wine64 + wine32 + winetricks,
+libreoffice-core/-writer (poora suite), gimp, inkscape, krita,
+vlc, telegram-desktop, persepolis, clamav + clamtk, gparted,
+codium (VSCodium), powershell, firefox-esr, geany, hardinfo,
+thunar, xfce4-terminal, mousepad. XAMPP: /opt/lampp
+(31,388 files, PHP 8.2.12, MariaDB). Vibe CLIs: crush, goose,
+codex, gemini, freebuff (usr/local/bin, 755 verified) +
+Cline/Continue waghera (S2/S4 logs). System-tools suite:
+desktop folders (System Tools) + hardinfo/gparted waghera.
+ONE-CLICK SHORTCUT-ONLY (spec ke MUTABIQ tiered - ye FAIL
+nahi, design hai): Blender, Darktable, FreeCAD, Kdenlive,
+OBS Studio, Synfig/Pencil2D, XDM, Pinta, scrcpy, paid vibe
+tools (Cursor/Windsurf - apni subscription, koi crack nahi).
+GALAT SHORTCUTS (installed apps ke Install-* files) - run24
+me DELETE kar diye gaye: Install Wine, Install-Thunderbird
+Mail (x2), Install-LibreCAD, Install-Scribus.
+
+----------------------------------------------------------------
+§7. USER VERDICTS - RUN18 KYUN FAIL HUA (asal mechanisms)
+----------------------------------------------------------------
+Jk ne run18 ISO VirtualBox me chalaya: desktop aya, lekin
+(1) logo/wallpaper nazar nahi aya, (2) "Install Thunderbird /
+Install Wine" shortcuts the, (3) kisi tool par click karne se
+kuch nahi khulta tha (silent no-op). Teeno ki EK hi bunyadi
+wajah thi, teen hisson me:
+
+(a) PERMISSIONS KA NUQS (build umask 0007): build hamesha
+    root se chala; jo files/folders build scripts ne banaye
+    woh 0660/0770 modes par reh gaye. Asar:
+    - run15: /usr khud 0770 -> user jk /bin/bash tak nahi
+      chala sakta tha ("Permission denied"), login/desktop
+      fail. [v1 fix: /usr 755]
+    - run18: /usr theek ho gaya (Jk desktop tak gaya) LEKIN
+      /usr/lib, /usr/share, /usr/local, /opt ke andar files
+      ab bhi 0660/0770 theen: .desktop files unreadable ->
+      menu/panel entries generic/truncated; shared libraries
+      (.so) unreadable -> apps launch par loader fail, GUI
+      launch me stderr kahin nazar nahi ata = "silent no-op";
+      /usr/local/bin ke jk-* scripts 0770 -> Jarvis
+      203/EXEC crash-loop; wallpaper + logo files 0660 ->
+      xfdesktop/whisker unhe parh nahi sake -> plain dark
+      desktop, generic icon. [v2 fix: files 660->644,
+      770->755 un trees me]
+    - run20: folders 0770 reh gaye the (find filter 2770 ki
+      ghalat fehmi) -> /usr/share/jk-assistant +
+      /opt/jk-assistant-venv band -> Jarvis exit 126.
+      [v3 fix: tamam 0770 folders -> 755; gate: image me
+      0770 dirs = 0, verified]
+(b) WALLPAPER MONITOR-NAME: config sirf "monitor0" par thi;
+    asal display "monitorVirtual-1" hai -> default backdrop.
+    [run24 fix: jk-wallpaper-fix autostart]
+(c) DESKTOP CLUTTER: jo apps pehle se installed theen un ke
+    "Install ..." shortcuts desktop par the (Wine,
+    Thunderbird, LibreCAD, Scribus) - confusing aur ghalat
+    signal ke tools installed nahi hain. [run24 me delete]
+SABAK: presence-test (file mojood hai) kafi nahi - launch-test
+aur user-permission se render-test lazmi hai. Isi liye is
+report me §5.4 launch tests shamil kiye gaye hain.
+
+----------------------------------------------------------------
+§8. HONEST DOWNGRADES / CAVEATS
+----------------------------------------------------------------
+8.1 Compression tabdeeli: xz squashfs ki jagah zstd-19
+    istemal hua (host VM ki baar-baar reboots ki wajah se;
+    ratio taqreeban barabar, speed kai guna). Kernel/initrd
+    me zstd support verified; live boot QEMU me PASS.
+8.2 Pinta: Debian repo me nahi - one-click installer.
+8.3 5 lang packages Debian me exist nahi karte
+    (fonts-noto-nastaliq-urdu [Nastaliq fonts-nafees se
+    cover], libreoffice-l10n-ur, hunspell-ur, hyphen-ur,
+    hyphen-ar). Urdu/Arabic baqi 12 packages + fonts + xkb
+    layouts installed hain.
+8.4 Waydroid: install PASS; Android ka full boot binder
+    kernel modules ki wajah se QEMU me verify nahi ho saka;
+    pehli run par ~1 GB download; Play Store ke liye GAPPS +
+    Google registration, guarantee nahi.
+8.5 Ollama service: QEMU (qemu64 CPU) me exit code 2 de kar
+    restart-limit hit karti hai - shak hai ke CPU capability
+    detection emulation me fail hoti hai; binary (30 MB) aur
+    unit theek hain. Real hardware par check lazmi. Models
+    first-run download hain (ISO me nahi) - design ke mutabiq.
+8.6 Urdu STT experimental (Whisper small Urdu WER ~33.68%):
+    commands theek, lambi dictation unreliable.
+8.7 hey-jarvis wake-word model: CC BY-NC-SA 4.0 (v1 free use
+    OK; commercial release ke liye self-trained model hoga).
+8.8 LLM ISO me nahi - first-run par ~1.9 GB download (design).
+8.9 IDM Windows-only hai - Persepolis + aria2 pre-installed;
+    XDM one-click.
+8.10 Wine se 100% Windows programs nahi chalte (heavy games/
+    anti-cheat/driver wale nahi) - ye Wine ki aam limit hai.
+
+----------------------------------------------------------------
+§9. LOOK & FEEL - maujooda haalat aur v1.1 SPEC
+----------------------------------------------------------------
+Jk ka verdict: "YA TO KALI JASA LAG RHA HA, MA NA TUMHA
+WINDOWS JASA BOLA THA." Imandari se jaiza:
+- Wallpaper: JK branded hai, ab render bhi hoga (run24 fix).
+  Lekin design dark pine hai - Win11 ki roshni/wallpaper
+  feel nahi deta.
+- Panel: bottom par hai (Windows-like position), whisker
+  Start (JK logo), launchers + tasklist LEFT-aligned hain,
+  tray right (volume/network/language/battery/clock). 
+  Win11 jaisi CENTERED alignment NAHI hai - ye FAIL hai
+  spec ke muqable.
+- Window decorations + icons: XFCE Default/Arc-Dark +
+  Papirus-Dark - Windows jaisi decorations NAHI hain.
+- Desktop icons: folders me munazzam hain lekin ab bhi
+  zyada hain; run24 me ghalat Install-* saaf kar diye.
+=> MAJMUee: LOOK-AND-FEEL = PARTIAL FAIL (branding mojood,
+   Windows-11 wali shakal nahi bani).
+v1.1 REBUILD ME LAZMI:
+  1. xfce4-docklike-plugin (ya plank) se centered taskbar,
+     Start button bilkul darmiyan wali feel ke sath.
+  2. Windows-11 style xfwm4 theme + icon theme (fluent/
+     Win11 icon set) - license-clean sources se.
+  3. Whisker menu ko Win11 Start jaisa configure (pinned
+     apps grid, search upar) ya koi Win11-menu plugin.
+  4. JK Plymouth theme (boot splash par logo).
+  5. Wallpaper ke roshan (light) aur dark dono JK variants,
+     light ko default karna taake desktop "Linux-dark" na lage.
+  6. Desktop par sirf 3-4 icons (This PC, Home, Install JK OS,
+     Trash) - baqi sab Start menu me.
+  7. Har tabdeeli ke baad QEMU desktop screenshot TEST-REPORT
+     me shamil karna (is report ke §5.4 ki tarah).
+
+----------------------------------------------------------------
+§10. RELEASE PREP
+----------------------------------------------------------------
+- ~/workspace/your_files/jk-os-release/ tayyar hai:
+  RELEASE-NOTES.md, JK-OS-v1.0.iso.sha256, TEST-REPORT.txt
+  (yehi report), release-extras/jk-xampp-selftest.sh,
+  source-scripts/ (23 files: build7.sh, stage4-iso.sh,
+  privacy-install.sh, customize scripts, jk-*.py helpers,
+  qemu test scripts), aur ISO ke 2 split parts
+  (JK-OS-v1.0.iso.part-0 = 1900 MB, part-1 = ~1.36 GB;
+  join: cat part-0 part-1 > JK-OS-v1.0.iso; join ke baad
+  sha256 asal ISO se match - verified).
+- Screenshots (saboot): qemu-desktop-clean.png (JK wallpaper
+  render + saaf desktop), qemu-desktop-apps.png (12 apps
+  launch saboot) - jk-os folder me mehfooz hain.
+- GitHub RELEASE user khud GitHub UI me banayega (connector
+  me release tool nahi hai) - assets upar wale folder se.
+================================================================

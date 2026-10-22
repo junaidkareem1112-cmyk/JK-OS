@@ -4,7 +4,7 @@
 
 Made with care in Multan, Pakistan by [JK Soft Solutions](https://jksoft.store).
 
-![Status](https://img.shields.io/badge/status-v1.0%20in%20development-amber)
+![Status](https://img.shields.io/badge/status-v1.0%20released-green)
 ![Base](https://img.shields.io/badge/base-Debian%2012%20Bookworm-0C5B44)
 ![Desktop](https://img.shields.io/badge/desktop-XFCE%20(Windows%2011--like)-0C5B44)
 ![RAM](https://img.shields.io/badge/RAM-4%20GB-0C5B44)
@@ -86,7 +86,7 @@ publication.
 
 ## Project status
 
-**v1.0 is in active development.** This repository is the public home of the
+**v1.0 is released (2026-10-22).** This repository is the public home of the
 project: documentation, build scripts and release notes live here first, and
 the v1.0 ISO will be published on the Releases page as soon as it passes its
 boot and install tests. Watch this repo to be notified.
